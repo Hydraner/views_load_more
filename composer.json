@@ -1,0 +1,8 @@
+{
+  "name": "drupal/views_load_more",
+  "description": "A pager plugin for views. Gives users the option to add a 'more' button to a view and have the results appended to existing results being displayed.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev",
+  "require": { }
+}

@@ -19,7 +19,7 @@ class VLMEventSubscriber implements EventSubscriberInterface {
    * {@inheritdoc}
    */
   public static function getSubscribedEvents() {
-    $events[KernelEvents::RESPONSE][] = array('onResponse', 0);
+    $events[KernelEvents::RESPONSE][] = array('onResponse');
 
     return $events;
   }
@@ -33,7 +33,7 @@ class VLMEventSubscriber implements EventSubscriberInterface {
   public function onResponse(FilterResponseEvent $event) {
     $response = $event->getResponse();
 
-    if ($response instanceof ViewAjaxResponse) {
+    if ($response instanceof \Drupal\views\Ajax\ViewAjaxResponse) {
       $view = $response->getView();
       $pagerPlugin = $view->getPager();
 
@@ -46,7 +46,7 @@ class VLMEventSubscriber implements EventSubscriberInterface {
             unset($commands[$key]);
           }
           // The replace should the only one, but just in case, we'll make sure.
-          else if ($command['command'] == 'insert' && $command['selector'] == '.view-dom-id-' . $view->dom_id) {
+          else if ($command['command'] == 'insert' && $command['selector'] == '.js-view-dom-id-' . $view->dom_id) {
             $stylePlugin = $view->getStyle();
             // Take the data attribute, which is the content of the view,
             // otherwise discard the insert command for the view, we're

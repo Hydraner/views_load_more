@@ -7,28 +7,28 @@
 namespace Drupal\views_load_more\Plugin\views\pager;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\views\Plugin\views\pager\Full;
+use Drupal\views\Plugin\views\pager\SqlBase;
 
 /**
- * The plugin to handle full pager.
- *
- * @ingroup views_pager_plugins
- *
- * @ViewsPager(
- *   id = "load_more",
- *   title = @Translation("Load more pager"),
- *   short_title = @Translation("Load more"),
- *   help = @Translation("Paged output, each page loaded via AJAX."),
- *   theme = "views_load_more_pager",
- *   register_theme = FALSE
- * )
- */
-class LoadMore extends Full {
+* Provides the plugin to handle the Load More pager.
+*
+* @ingroup views_pager_plugins
+*
+* @ViewsPager(
+*   id = "load_more",
+*   title = @Translation("Load More Pager"),
+*   help = @Translation("views_load_more"),
+*   theme = "views_load_more_pager",
+*   register_theme = FALSE,
+*   display_types = {"basic"}
+* )
+*/
+class LoadMore extends SqlBase {
 
   /**
    * The default jQuery selector for views content.
    */
-  const DEFAULT_CONTENT_SELECTOR = '> .view-content';
+  const DEFAULT_CONTENT_SELECTOR = '.view-content';
 
   /**
    * The default jQuery selector for view pager.
@@ -175,7 +175,9 @@ class LoadMore extends Full {
       '#more_button_text' => $this->options['more_button_text'],
       '#end_text' => $this->options['end_text'],
     );
-
+    if ($this->view->ajaxEnabled()) {
+      $build['#attached']['library'][] = 'views_load_more/views_load_more.ajax';
+    }
     return $output;
   }
 }

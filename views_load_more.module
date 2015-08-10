@@ -7,12 +7,12 @@
  */
 
 // We need to implement our own tpls for items being return via the load-more pager.
+use Drupal\Core\Url;
 
 /**
  * Implements hook_theme().
  */
 function views_load_more_theme() {
-
   return array(
     'views_load_more_pager' => array(
       'variables' => array(
@@ -29,10 +29,33 @@ function views_load_more_theme() {
 /**
  * Preprocess function for views_load_more_pager theme hook.
  */
-function template_preprocess_views_load_more_pager(&$variables) {
+function template_preprocess_views_load_more_pager(array &$variables) {
   $element = $variables['element'];
   $parameters = $variables['parameters'];
   global $pager_page_array, $pager_total;
+  if ($pager_page_array[$element] >= ($pager_total[$element] - 1)) {
+    return;
+  }
+
+  $options = array(
+    'query' => pager_query_add_page($variables['parameters'], $element, $pager_page_array[$element] + 1),
+    'attributes' => array(
+      'title' => t('Go to next page'),
+      'rel' => 'next',
+    ),
+    // Below is ignored by default, supplied to support hook_link_alter
+    // implementations.
+    'pager_context' => array(
+      'link_type' => 'next',
+      'element' => $element,
+      'interval' => 1,
+    ),
+  );
+  $url = new Url('<current>', [], $options);
+  if ($pager_page_array[$element] + 1 == 2) {
+    $variables['more_button_text'] = 'second time';
+  }
+  $variables['items'] = \Drupal::l($variables['more_button_text'], $url);
 
   // Nothing to do if there is only one page.
   if ($pager_total[$element] <= 1) {
@@ -48,59 +71,8 @@ function template_preprocess_views_load_more_pager(&$variables) {
     $options = array(
       'query' => pager_query_add_page($parameters, $element, $pager_page_array[$element] + 1),
     );
-    $variables['next_url'] = \Drupal::url('<current>', [], $options);
-  }
-}
-
-/**
- * Implements hook_views_ajax_data_alter().
- */
-function views_load_more_views_ajax_data_alter(&$commands, $view) {
-  // Support No results behavior.
-  if (!$view->total_rows) {
-    return;
-  }
-
-  if (is_a($view->query->pager, 'views_plugin_pager_load_more')) {
-    // This is a work-around for allowing exposed for on the page.
-    if ($view->query->pager->current_page == 0) {
-      return;
-    }
-    foreach ($commands as $key => $command) {
-      // remove "viewsScrollTop" command, as this behavior is unnecessary.
-      if ($command['command'] == 'viewsScrollTop') {
-        unset($commands[$key]);
-      }
-      // the replace should the only one, but just in case, we'll make sure.
-      if ($command['command'] == 'insert' && $command['selector'] == '.view-dom-id-' . $view->dom_id) {
-        if ($view->style_plugin->plugin_name == 'list' && in_array($view->style_plugin->options['type'], array('ul', 'ol'))) {
-          if (empty($view->style_plugin->options['wrapper_class'])) {
-            $target = "> {$view->style_plugin->options['type']}:not(.links)";
-          }
-          else {
-            $wrapper_classes = explode(' ', $view->style_plugin->options['wrapper_class']);
-            $wrapper_classes = implode('.', $wrapper_classes);
-            $target = ".{$wrapper_classes} > {$view->style_plugin->options['type']}:not(.links)";
-          }
-          $commands[$key]['targetList'] = $target;
-        }
-        else if ($view->style_plugin->plugin_name == 'table') {
-          $commands[$key]['targetList'] = '.views-table tbody';
-        }
-
-        $commands[$key]['command'] = 'viewsLoadMoreAppend';
-        $commands[$key]['method'] = 'append';
-        if (isset($view->query->pager->options['effects']) && $view->query->pager->options['effects']['type'] != 'none') {
-          $commands[$key]['effect'] = $view->query->pager->options['effects']['type'];
-          $commands[$key]['speed'] = $view->query->pager->options['effects']['speed'];
-        }
-        $commands[$key]['options'] = array(
-          // @todo change to content_selector
-          'content' => $view->query->pager->options['advance']['content_class'],
-          'pager_selector' => $view->query->pager->options['advance']['pager_selector'],
-        );
-      }
-    }
+    $url = new Url('<current>', [], $options);
+    $variables['next_link'] = \Drupal::l($variables['more_button_text'], $url);
   }
 }
 
@@ -110,8 +82,5 @@ function views_load_more_views_ajax_data_alter(&$commands, $view) {
  * @param \Drupal\views\ViewExecutable $view
  */
 function views_load_more_views_pre_render($view) {
-
-  if ($view->ajaxEnabled() && $view->getPager()->getPluginId() === 'load_more') {
-    $view->element['#attached']['library'][] = 'views_load_more/views_load_more';
-  }
+  $view->element['#attached']['library'][] = 'views_load_more/views_load_more';
 }

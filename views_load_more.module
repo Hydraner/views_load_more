@@ -52,9 +52,6 @@ function template_preprocess_views_load_more_pager(array &$variables) {
     ),
   );
   $url = new Url('<current>', [], $options);
-  if ($pager_page_array[$element] + 1 == 2) {
-    $variables['more_button_text'] = 'second time';
-  }
   $variables['items'] = \Drupal::l($variables['more_button_text'], $url);
 
   // Nothing to do if there is only one page.
